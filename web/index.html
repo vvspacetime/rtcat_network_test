@@ -101,7 +101,7 @@
 <script src="js/common/jquery.cxselect.min.js"></script>
 <script src="js/common/config.js"></script>
 <script src="vendor/bootstrap/js/bootstrap.min.js"></script>
-<script src="/dist/realtimecat.min.js"></script>
+<script src="js/common/realtimecat.min.js"></script>
 <script>
     /************* Config ****************/
     const testTime = 5;//每项视频连接测试的时间
@@ -475,7 +475,7 @@
                     return new Promise(function(resolve,reject){
                         $.ajax({
                             method: "POST",
-                            url: `./${userID}`,
+                            url: `./video/${userID}`,
                             xhr: function () {
                                 var myXhr = $.ajaxSettings.xhr();
                                 if (myXhr.upload) {
