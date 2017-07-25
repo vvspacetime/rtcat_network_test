@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>实时猫网络测试</title>
+    <link rel="stylesheet" href="vendor/bootstrap/css/bootstrap.min.css">
+    <style>
+        .players {
+            position: relative;
+        }
+        .player {
+            float: left;
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-default navbar-static-top">
+    <div class="container">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="/">
+                实时猫网络测试
+            </a>
+        </div>
+    </div>
+</nav>
+<div class="container">
+    <label>完成以下信息后，点击开始测试</label>
+
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="form-group">
+                <label for="txt_userID">用户ID</label>
+                <input type="text"  class="form-control" id="txt_userID">
+            </div>
+        </div>
+
+
+        <div class="col-md-6">
+            <label>用户地址</label>
+            <div id="address">
+                <select id="sel_pro" class="province form-control"></select>
+                <select id="sel_city" class="city form-control"></select>
+                <select id="sel_area" class="area form-control"></select>
+            </div>
+        </div>
+    </div>
+
+
+
+    <div class="row" style="margin-top: 10px">
+        <div class="col-md-3">
+            <button class="btn btn-default" id="bt_start">开始测试</button>
+        </div>
+    </div>
+
+
+    <div class="row" style="margin-top: 10px">
+        <div class="players" id="players"></div>
+
+    </div>
+
+    <div class="right">
+        <div class="col-md-6">
+            <table class="table" id="tb_test_1">
+                <caption>测试列表</caption>
+                <thead>
+                <tr>
+                    <th>#</th>
+                    <th>服务器Ip</th>
+                    <th>状态</th>
+                </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col-md-6">
+            <table class="table" id="tb_test_2">
+                <caption>测试列表</caption>
+                <thead>
+                <tr>
+                    <th>#</th>
+                    <th>服务器Ip</th>
+                    <th>状态</th>
+                </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+
+</div>
+
+</body>
+<script src="js/common/jquery.min.js"></script>
+<script src="js/common/jquery.cxselect.min.js"></script>
+<script src="js/common/config.js"></script>
+<script src="vendor/bootstrap/js/bootstrap.min.js"></script>
+<script src="/dist/realtimecat.min.js"></script>
+<script>
+    /************* Config ****************/
+    const testTime = 5;//每项视频连接测试的时间
+    const fps = 15;
+//    const turnList = ["139.198.4.40"];
+    const turnList = [
+        "139.198.4.40",
+        "139.198.190.154",
+        "121.201.8.75",
+        "211.149.186.18",
+        "207.226.141.56",
+        "107.150.100.181"];
+    const logUrl = "https://learningtech:learning-tech123@log.learning-tech.cn/api/logs";
+
+
+    /**************** UI Element***************/
+    var btStart = document.getElementById("bt_start");
+
+    /*************Global************/
+    var address = [];
+    var userID = "";
+    var gIp = "";
+    var currentTest = "";
+    var localStream;
+    var testList = [];
+    /*************** Start ******************/
+    window.onload = function () {
+        $.cxSelect.defaults.url = "js/common/cityData.min.json";
+        $.cxSelect.defaults.nodata = 'none';
+
+        $('#address').cxSelect({
+            selects: ['province', 'city', 'area'],
+            nodata: 'none'
+        });
+
+
+        var tbTest1 = document.getElementById("tb_test_1");
+        var tbTest2 = document.getElementById("tb_test_2");
+
+        function addRow(index) {
+            let tb;
+            if(index < turnList.length/2){
+                tb = tbTest1;
+            }else {
+                tb = tbTest2;
+            }
+            var newRow = tb.insertRow();
+            var indexCell = newRow.insertCell();
+            var indexText = document.createTextNode(index);
+
+            var ipCell = newRow.insertCell();
+            var ipText = document.createTextNode(turnList[index]);
+
+            var stateCell = newRow.insertCell();
+            var stateText = document.createTextNode('');
+
+            indexCell.appendChild(indexText);
+            ipCell.appendChild(ipText);
+            stateCell.appendChild(stateText);
+            return stateText;
+        }
+
+        for(let i in turnList){
+            let test = new RTCatTest(turnList[i]);
+            let stateText = addRow(i);
+
+            test.setState = function (state) {
+                stateText.textContent = state;
+            };
+
+            testList.push(test);
+        }
+
+
+        RTCat.detect({browser:true}).then(function (result) {
+            if(result.browser.name != "Chrome"){
+                console.log(result.browser);
+                alert("浏览器兼容性检测不合格，请更换为Chrome浏览器")
+            }
+        }).catch(function (error) {
+            alert("检测浏览器错误,请更换为Chrome浏览器");
+        });
+    };
+
+    btStart.onclick = function () {
+        var txtUserID = document.getElementById("txt_userID");
+        var regExp = /^[a-zA-Z0-9\-]{1,100}$/g;
+        if(!regExp.test(txtUserID.value)){
+            alert("用户ID不能包含特殊字符");
+        }else {
+            var selPro = document.getElementById("sel_pro");
+            var selCity = document.getElementById("sel_city");
+            var selArea = document.getElementById("sel_area");
+
+            if(!txtUserID.value && txtUserID.value.length <= 0) {
+                alert("请补全用户ID");
+            } else {
+                if((selArea.disabled && selCity.value != "0" && selCity.value != "") ||
+                        selArea.value != "0" && selArea.value != ""){
+                    address = [selPro.value,selCity.value,selArea.value];
+                    userID = txtUserID.value;
+
+                    console.log(userID,address);
+
+                    getIp().then(function (ip) {
+                        gIp = ip;
+                        getLocalStream();
+                        btStart.disabled = true;
+                    });
+                }else {
+                    alert("请补全地址信息");
+                }
+            }
+        }
+
+
+    };
+
+    
+    function getIp() {
+        let apiUrls = [
+            "//ipapi.co/json/",
+            "//jsonip.com/?callback=?",
+            "//freegeoip.net/json/?callback=?"];
+
+        function create(url) {
+            return new Promise(function(resolve,reject){
+                $.getJSON(url,function (data) {
+                    console.log(url,data.ip);
+                    resolve(data.ip);
+                })
+            });
+        }
+
+        let fs = [];
+        for(let i in apiUrls){
+            fs.push(create(apiUrls[i]));
+        }
+
+        return Promise.race(fs)
+    }
+    
+
+    function goNext() {
+        let test = testList.shift();
+        if(test){
+            test.start();
+        }else {
+            alert("测试完成");
+        }
+    }
+
+
+    function getLocalStream() {
+        RTCat.createStream({type: RTCat.STREAM_TYPE.AV,
+            size: {width:300,height:300},
+            fps: fps}
+        ).then(function (stream) {
+                    localStream = stream;
+                    goNext();
+                });
+    }
+
+    function playStream(stream, id) {
+        var div = document.createElement('div');
+        div.setAttribute('id', 'video-' + id);
+        div.setAttribute('class', 'player');
+        document.getElementById('players').appendChild(div);
+        stream.play('video-' + id, {size: {width: 100, height: 100}});
+    }
+
+    function getIceServer(ip) {
+        let url = "turn:api.realtimecat.com:12345";
+        let iceServer = {urls:[url],username:"learningtech",credential:"learningtech"};
+        return [iceServer];
+    }
+
+
+    /*******************Class**************/
+    function Clock(c) {
+        let timer = null;
+        let count = c;
+        let that = this;
+
+        this.onstop = function (focus) {};
+        this.oncount = function (c) {};
+
+        this.focusStop = function () {
+            clearInterval(timer);
+            that.onstop(true);
+        };
+        this.start = function () {
+            timer = setInterval(function () {
+                count--;
+                if(count <= 0){
+                    clearInterval(timer);
+                    that.onstop(false);
+                    return;
+                }
+                that.oncount(count);
+            },1000);
+        };
+    }
+
+
+    function RTCatTest(serverIp) {
+        let that = this;
+        let pipe1,pipe2;
+        let iceServer = getIceServer(serverIp);
+
+        let testName = serverIp.split(".").join("-");
+
+        this.setState = function (state) {};
+        this.onend = function () {};
+        this.start = function () {
+            console.log("start test: " + serverIp);
+
+            RTCat.setRelay(true);
+
+            let remoteStream;
+
+            //todo report
+            let report = {
+                module:"rtcat-network-test",
+                info:{
+                    serverIp:serverIp,
+                    userID:userID,
+                    address:address,
+                    ip:gIp
+                },
+                events:[],
+                dynamics:[]
+            };
+
+            connect();
+
+            function connect() {
+                let clockTimeout = new Clock(5);
+                clockTimeout.oncount = function (c) {
+                    that.setState("准备中："+ c);
+                };
+                clockTimeout.onstop = function (focus) {
+                    if(!focus){
+                        that.setState("超时");
+                        release();
+                        goNext();
+                    }else {
+                    }
+                };
+
+                pipe1 = RTCat.createPipe({iceServers:iceServer,stream:localStream});
+                pipe2 = RTCat.createPipe({iceServers:iceServer});
+                pipe1.init();
+                pipe2.init();
+
+                pipe1.onoffersdp = function (sdp) {
+                    pipe2.answer(sdp);
+                };
+
+                pipe1.onlocalice = function (ice) {
+                    pipe2.addRemoteCandidate(ice);
+                };
+
+                pipe1.on("closed",function () {
+                });
+
+                pipe1.on("connected",function () {
+                });
+
+
+                pipe2.onanswersdp = function (sdp) {
+                    pipe1.foffer(sdp);
+                };
+
+                pipe2.onlocalice = function (ice) {
+                    pipe1.addRemoteCandidate(ice);
+                };
+
+                pipe2.on("connected",function () {
+                    clockTimeout.focusStop();
+                    startClock();
+                    playStream(remoteStream,testName);
+                });
+
+                pipe2.on("stream",function (stream) {
+                    remoteStream = stream;
+                });
+
+                pipe2.on("closed",function () {
+
+                });
+
+                pipe2.on("log",function (log) {
+                    logDynamic(log);
+                });
+
+                pipe1.offer();
+                clockTimeout.start();
+            }
+
+
+            function logEvent(who,event,data) {
+                let r = {
+                    who:who,
+                    event:event,
+                    data:data,
+                    timestamp:Date.now()
+                };
+                report.events.push(r);
+                console.log(who,event,data||"");
+            }
+
+            function logDynamic(log) {
+                let r = {
+                    log:log,
+                    timestamp:Date.now()
+                };
+                report.dynamics.push(r);
+            }
+
+            function startClock() {
+                let clock = new Clock(testTime);
+                clock.onstop = function () {
+                    remoteStream.record('stop');
+                    release();
+
+                    Promise.all([createReport(),createRecord()]).then(function () {
+                        that.setState("测试完成");
+                        goNext();
+                    }).catch(function (error) {
+                       console.log(error);
+                    });
+                };
+                clock.oncount = function (c) {
+                    that.setState("测试中：" + c);
+                };
+                clock.start();
+                remoteStream.record('start');
+            }
+
+            function createReport() {
+                return new Promise(function (resolve,reject) {
+                    $.ajax({
+                        method:"POST",
+                        url:logUrl,
+                        data:report
+                    }).done(function () {
+                        resolve();
+                    }).error(function (error) {
+                        reject(error);
+                    })
+                });
+            }
+            
+            function createRecord() {
+                function uploadFile(file) {
+                    var formData = new FormData();
+                    formData.append("file", file, file.name);
+                    formData.append("upload_file", true);
+
+                    function progress(event) {
+                        var percent = 0;
+                        var position = event.loaded || event.position;
+                        var total = event.total;
+                        if (event.lengthComputable) {
+                            percent = Math.ceil(position / total * 100);
+                            that.setState(`上传录像中: ${percent}%`);
+                        }
+                    }
+
+                    return new Promise(function(resolve,reject){
+                        $.ajax({
+                            method: "POST",
+                            url: `./${userID}`,
+                            xhr: function () {
+                                var myXhr = $.ajaxSettings.xhr();
+                                if (myXhr.upload) {
+                                    myXhr.upload.addEventListener('progress', progress, false);
+                                }
+                                return myXhr;
+                            },
+                            async: true,
+                            data: formData,
+                            cache: false,
+                            contentType: false,
+                            processData: false,
+                            timeout: 60000
+                        }).done(function () {
+                            resolve();
+                        }).error(function (error) {
+                            reject(error);
+                        });
+                    });
+
+                }
+
+                if(remoteStream){
+                    let randomNumber = Math.ceil(Math.random()*1000);
+                    let blob = remoteStream.record('download');
+                    let file = new File([blob],`${testName}-${randomNumber}.webm`,{type:`webm`,lastModified:Date.now()});
+                    return uploadFile(file);
+                }
+            }
+
+            function release() {
+                pipe1.close();
+                pipe2.close();
+            }
+
+        };
+
+
+    }
+</script>
+</html>
