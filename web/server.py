@@ -279,7 +279,7 @@ class SimpleHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 
 def test(HandlerClass = SimpleHTTPRequestHandler):
-    httpd = BaseHTTPServer.HTTPServer(('localhost',4443),HandlerClass)
+    httpd = BaseHTTPServer.HTTPServer(('0.0.0.0',4443),HandlerClass)
     httpd.socket = ssl.wrap_socket(httpd.socket, certfile='../server.pem', server_side=True)
     print "server on port:4443"
     httpd.serve_forever()

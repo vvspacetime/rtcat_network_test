@@ -114,7 +114,7 @@
         "211.149.186.18",
         "207.226.141.56",
         "107.150.100.181"];
-    const logUrl = "https://learningtech:learning-tech123@log.learning-tech.cn/api/logs";
+    const logUrl = "https://log.learning-tech.cn:8800/json";
 
 
     /**************** UI Element***************/
@@ -447,7 +447,8 @@
                     $.ajax({
                         method:"POST",
                         url:logUrl,
-                        data:report
+                        data:JSON.stringify(report),
+                        contentType:"json"
                     }).done(function () {
                         resolve();
                     }).error(function (error) {
