@@ -104,18 +104,11 @@
 <script src="js/common/realtimecat.min.js"></script>
 <script>
     /************* Config ****************/
-    const testTime = 5;//每项视频连接测试的时间
+    const testTime = 15;//每项视频连接测试的时间
     const fps = 15;
-//    const turnList = ["139.198.4.40"];
-    const turnList = [
-        "139.198.4.40",
-        "139.198.190.154",
-        "121.201.8.75",
-        "211.149.186.18",
-        "207.226.141.56",
-        "107.150.100.181"];
+    const turnList = [];
     const logUrl = "https://log.learning-tech.cn:8800/json";
-
+    const moduleName = "rtcat-network-test-v2";
 
     /**************** UI Element***************/
     var btStart = document.getElementById("bt_start");
@@ -129,6 +122,7 @@
     var testList = [];
     /*************** Start ******************/
     window.onload = function () {
+        btStart.disabled = true;
         $.cxSelect.defaults.url = "js/common/cityData.min.json";
         $.cxSelect.defaults.nodata = 'none';
 
@@ -153,7 +147,7 @@
             var indexText = document.createTextNode(index);
 
             var ipCell = newRow.insertCell();
-            var ipText = document.createTextNode(turnList[index]);
+            var ipText = document.createTextNode(turnList[index].ip);
 
             var stateCell = newRow.insertCell();
             var stateText = document.createTextNode('');
@@ -164,31 +158,39 @@
             return stateText;
         }
 
-        for(let i in turnList){
-            let test = new RTCatTest(turnList[i]);
-            let stateText = addRow(i);
 
-            test.setState = function (state) {
-                stateText.textContent = state;
-            };
+        getIce();
+        getUCloudIce().then(function () {
+            console.log(turnList);
+            for(let i in turnList){
+                let test = new RTCatTest(turnList[i]);
+                let stateText = addRow(i);
 
-            testList.push(test);
-        }
+                test.setState = function (state) {
+                    stateText.textContent = state;
+                };
 
-
-        RTCat.detect({browser:true}).then(function (result) {
-            if(result.browser.name != "Chrome"){
-                console.log(result.browser);
-                alert("浏览器兼容性检测不合格，请更换为Chrome浏览器")
+                testList.push(test);
             }
-        }).catch(function (error) {
-            alert("检测浏览器错误,请更换为Chrome浏览器");
+
+            RTCat.detect({browser:true}).then(function (result) {
+                if(result.browser.name != "Chrome"){
+                    console.log(result.browser);
+                    alert("浏览器兼容性检测不合格，请更换为Chrome浏览器")
+                }else {
+                    btStart.disabled = false;
+                }
+            }).catch(function (error) {
+                alert("检测浏览器错误,请更换为Chrome浏览器");
+            });
         });
+
+
     };
 
     btStart.onclick = function () {
         var txtUserID = document.getElementById("txt_userID");
-        var regExp = /^[a-zA-Z0-9\-]{1,100}$/g;
+        var regExp = /^[\u4e00-\u9effa-zA-Z0-9\-]{1,100}$/g;
         if(!regExp.test(txtUserID.value)){
             alert("用户ID不能包含特殊字符");
         }else {
@@ -219,6 +221,62 @@
 
 
     };
+
+    function getIce() {
+        let ips = ["182.140.231.103","58.220.10.224","117.23.56.171","175.102.16.247","203.88.218.139","123.103.7.190",
+            "117.79.132.166","101.89.68.110","163.53.169.62","183.6.205.70"];
+
+        for(let i in ips){
+            turnList.push({
+                ip:ips[i],
+                username:"jingewiming",
+                credential:"jingweiming"
+            });
+        }
+    }
+
+    
+    function getUCloudIce() {
+        let ips = ["120.132.67.63","120.132.14.84","106.75.147.211"];
+        
+        let apikey = "8b8da770-d99c-4617-9f9a-79510505e175";
+        let secret="262abb49-2ffc-46c6-bdc7-cb27579b21c5";
+        let p2p_session="314e6da1-7282-44cd-92b2-41cc99e1d6ba";
+        let token_url = "https://api.realtimecat.com/v0.4/sessions/"
+                + p2p_session + '/tokens';
+
+        return new Promise(function(resolve,reject){
+            $.ajax({
+                'url':token_url,
+                'method':'POST',
+                'headers':{
+                    'X-RTCAT-APIKEY':apikey,
+                    'X-RTCAT-SECRET':secret
+                },
+                'data':{
+                    'session_id':p2p_session,
+                    'type':'pub'
+                }
+            }).done(function(msg){
+                RTCat.createSession({tokenId:msg.uuid,url:"wss://turn.rtcat.cn:3001",type:"p2p"}).then(function (session) {
+                    let iceServers = session.getIceServers();
+                    let username = iceServers[0].username;
+                    let credential = iceServers[0].credential;
+
+                    for(let i in ips){
+                        turnList.push({
+                            ip:ips[i],
+                            username:username,
+                            credential:credential});
+                    }
+
+                    resolve();
+                });
+            }).error(function (error) {
+                console.log(error);
+            });
+        });
+    }
 
     
     function getIp() {
@@ -273,13 +331,41 @@
         stream.play('video-' + id, {size: {width: 100, height: 100}});
     }
 
-    function getIceServer(ip) {
-        let url = "turn:api.realtimecat.com:12345";
-        let iceServer = {urls:[url],username:"learningtech",credential:"learningtech"};
+    function getIceServer(ip,username,credential) {
+        let url = `turn:${ip}:443`;
+        let iceServer = {urls:[url],username:username,credential:credential};
         return [iceServer];
     }
 
 
+    function getStdDev(list) {
+        let len = list.length;
+        if(len > 1){
+            let sum = list.reduce(function (a,b) {
+                return a + b;
+            });
+            let avg = sum /len;
+
+            let slist = list.map(function (a) {
+                return Math.pow((a-avg),2);
+            });
+
+            let sdev = slist.reduce(function (a,b) {
+                        return a + b;
+                    })/len;
+
+            return {
+                sd:Math.sqrt(sdev),
+                avg:avg};
+        }else {
+            return {
+                sd:0,
+                avg:0
+            }
+        }
+    }
+    
+    
     /*******************Class**************/
     function Clock(c) {
         let timer = null;
@@ -307,53 +393,83 @@
     }
 
 
-    function RTCatTest(serverIp) {
-        let that = this;
-        let pipe1,pipe2;
-        let iceServer = getIceServer(serverIp);
+    function RTCatTest(turnTest) {
+        let that      = this;
+        let pipe1, pipe2;
 
-        let testName = serverIp.split(".").join("-");
+        let testName = turnTest.ip.split(".").join("-");
 
-        this.setState = function (state) {};
-        this.onend = function () {};
-        this.start = function () {
-            console.log("start test: " + serverIp);
+        let iceServer = getIceServer(turnTest.ip,turnTest.username,turnTest.credential);
+
+        this.setState = function (state) {
+        };
+        this.onend    = function () {
+        };
+        this.start    = function () {
+            console.log("start test: " + testName);
 
             RTCat.setRelay(true);
 
             let remoteStream;
 
-            //todo report
+            let uploadReport   = {
+                kBpsArray: [],
+                mos      : 0
+            };
+            let downloadReport = {
+                kBpsArray      : [],
+                delayArray     : [],
+                packetsLossRate: 0.0,
+                jitter         : 0,
+                mos            : 0
+            };
+
             let report = {
-                module:"rtcat-network-test",
-                info:{
-                    serverIp:serverIp,
-                    userID:userID,
-                    address:address,
-                    ip:gIp
+                module  : moduleName,
+                userID  : userID,
+                address : address.join("/"),
+                serverIp: testName,
+                clientIp: gIp,
+                data    : {
+                    upload  : {
+                        kBpsAvg: 0,
+                        kBpsSD : 0,
+                        mos    : 0
+                    },
+                    download: {
+                        kBpsAvg        : 0,
+                        kBpsSD         : 0,
+                        delayAvg       : 0,
+                        delaySD        : 0,
+                        packetsLossRate: 0.0,
+                        jitter         : 0,
+                        mos            : 0
+                    },
+                    net     : {
+                        rtt: 0
+                    }
                 },
-                events:[],
-                dynamics:[]
+                dynamics: []
             };
 
             connect();
 
             function connect() {
-                let clockTimeout = new Clock(5);
+                let clockTimeout     = new Clock(5);
                 clockTimeout.oncount = function (c) {
-                    that.setState("准备中："+ c);
+                    that.setState("准备中：" + c);
                 };
-                clockTimeout.onstop = function (focus) {
-                    if(!focus){
+                clockTimeout.onstop  = function (focus) {
+                    if (!focus) {
                         that.setState("超时");
                         release();
                         goNext();
-                    }else {
+                    } else {
                     }
                 };
 
-                pipe1 = RTCat.createPipe({iceServers:iceServer,stream:localStream});
-                pipe2 = RTCat.createPipe({iceServers:iceServer});
+                pipe1 = RTCat.createPipe({iceServers: iceServer, stream: localStream});
+                pipe2 = RTCat.createPipe({iceServers: iceServer});
                 pipe1.init();
                 pipe2.init();
 
@@ -365,12 +481,22 @@
                     pipe2.addRemoteCandidate(ice);
                 };
 
-                pipe1.on("closed",function () {
+                pipe1.on("closed", function () {
                 });
 
-                pipe1.on("connected",function () {
+                pipe1.on("connected", function () {
                 });
 
+                pipe1.on("log", function (log) {
+                    let kBps = Number(log.video.send.kbpsSend);
+                    if (kBps > 0) {
+                        uploadReport.kBpsArray.push(kBps);
+                    }
+                    let mos = Number(log.video.send.mos);
+                    if (mos > 0) {
+                        uploadReport.mos = mos;
+                    }
+                });
 
                 pipe2.onanswersdp = function (sdp) {
                     pipe1.foffer(sdp);
@@ -380,22 +506,54 @@
                     pipe1.addRemoteCandidate(ice);
                 };
 
-                pipe2.on("connected",function () {
+                pipe2.on("connected", function () {
                     clockTimeout.focusStop();
                     startClock();
-                    playStream(remoteStream,testName);
+                    playStream(remoteStream, testName);
                 });
 
-                pipe2.on("stream",function (stream) {
+                pipe2.on("stream", function (stream) {
                     remoteStream = stream;
                 });
 
-                pipe2.on("closed",function () {
+                pipe2.on("closed", function () {
 
                 });
 
-                pipe2.on("log",function (log) {
+
+                pipe2.on("log", function (log) {
                     logDynamic(log);
+
+                    let kBps = Number(log.video.recv.kbpsRecv);
+                    if (kBps > 0) {
+                        downloadReport.kBpsArray.push(kBps);
+                    }
+
+                    let delay = Number(log.video.recv.currentDelayMs);
+                    if (delay > 0) {
+                        downloadReport.delayArray.push(delay);
+                    }
+
+                    let lossRate = Number(log.video.recv.packetsLossRate);
+                    if (lossRate > 0) {
+                        downloadReport.packetsLossRate = lossRate;
+                    }
+
+                    let jitter = Number(log.video.recv.jitter);
+                    if (jitter > 0) {
+                        downloadReport.jitter = jitter;
+                    }
+
+                    let mos = Number(log.video.recv.mos);
+                    if (mos > 0) {
+                        downloadReport.mos = mos;
+                    }
+
+                    let rtt = Number(log.net.rtt);
+                    if (rtt > 0) {
+                        report.data.net.rtt = rtt;
+                    }
+
                 });
 
                 pipe1.offer();
@@ -403,37 +561,40 @@
             }
 
 
-            function logEvent(who,event,data) {
+            function logEvent(who, event, data) {
                 let r = {
-                    who:who,
-                    event:event,
-                    data:data,
-                    timestamp:Date.now()
+                    who      : who,
+                    event    : event,
+                    data     : data,
+                    timestamp: Date.now()
                 };
                 report.events.push(r);
-                console.log(who,event,data||"");
+                console.log(who, event, data || "");
             }
 
             function logDynamic(log) {
                 let r = {
-                    log:log,
-                    timestamp:Date.now()
+                    log      : log,
+                    timestamp: Date.now()
                 };
                 report.dynamics.push(r);
             }
 
-            function startClock() {
-                let clock = new Clock(testTime);
-                clock.onstop = function () {
-                    remoteStream.record('stop');
-                    release();
+            function testEnd() {
+                remoteStream.record('stop');
+                release();
+                Promise.all([createReport(), createRecord()]).then(function () {
+                    that.setState("测试完成");
+                    goNext();
+                }).catch(function (error) {
+                    console.log(error);
+                });
+            }
 
-                    Promise.all([createReport(),createRecord()]).then(function () {
-                        that.setState("测试完成");
-                        goNext();
-                    }).catch(function (error) {
-                       console.log(error);
-                    });
+            function startClock() {
+                let clock     = new Clock(testTime);
+                clock.onstop  = function () {
+                    testEnd();
                 };
                 clock.oncount = function (c) {
                     that.setState("测试中：" + c);
@@ -443,12 +604,24 @@
             }
 
             function createReport() {
-                return new Promise(function (resolve,reject) {
+                report.data.upload.kBpsAvg = getStdDev(uploadReport.kBpsArray).avg;
+                report.data.upload.kBpsSD = getStdDev(uploadReport.kBpsArray).sd;
+                report.data.upload.mos = uploadReport.mos;
+
+                report.data.download.kBpsAvg = getStdDev(downloadReport.kBpsArray).avg;
+                report.data.download.kBpsSD = getStdDev(downloadReport.kBpsArray).sd;
+                report.data.download.delayAvg = getStdDev(downloadReport.delayArray).avg;
+                report.data.download.delaySD = getStdDev(downloadReport.delayArray).sd;
+                report.data.download.jitter = downloadReport.jitter;
+                report.data.download.packetsLossRate = downloadReport.packetsLossRate;
+                report.data.download.mos = downloadReport.mos;
+
+                return new Promise(function (resolve, reject) {
                     $.ajax({
-                        method:"POST",
-                        url:logUrl,
-                        data:JSON.stringify(report),
-                        contentType:"json"
+                        method     : "POST",
+                        url        : logUrl,
+                        data       : JSON.stringify(report),
+                        contentType: "json"
                     }).done(function () {
                         resolve();
                     }).error(function (error) {
@@ -456,7 +629,7 @@
                     })
                 });
             }
-            
+
             function createRecord() {
                 function uploadFile(file) {
                     var formData = new FormData();
@@ -464,32 +637,32 @@
                     formData.append("upload_file", true);
 
                     function progress(event) {
-                        var percent = 0;
+                        var percent  = 0;
                         var position = event.loaded || event.position;
-                        var total = event.total;
+                        var total    = event.total;
                         if (event.lengthComputable) {
                             percent = Math.ceil(position / total * 100);
                             that.setState(`上传录像中: ${percent}%`);
                         }
                     }
 
-                    return new Promise(function(resolve,reject){
+                    return new Promise(function (resolve, reject) {
                         $.ajax({
-                            method: "POST",
-                            url: `./video/${userID}`,
-                            xhr: function () {
+                            method     : "POST",
+                            url        : `./video/${userID}`,
+                            xhr        : function () {
                                 var myXhr = $.ajaxSettings.xhr();
                                 if (myXhr.upload) {
                                     myXhr.upload.addEventListener('progress', progress, false);
                                 }
                                 return myXhr;
                             },
-                            async: true,
-                            data: formData,
-                            cache: false,
+                            async      : true,
+                            data       : formData,
+                            cache      : false,
                             contentType: false,
                             processData: false,
-                            timeout: 60000
+                            timeout    : 60000
                         }).done(function () {
                             resolve();
                         }).error(function (error) {
@@ -499,10 +672,19 @@
 
                 }
 
-                if(remoteStream){
-                    let randomNumber = Math.ceil(Math.random()*1000);
-                    let blob = remoteStream.record('download');
-                    let file = new File([blob],`${testName}-${randomNumber}.webm`,{type:`webm`,lastModified:Date.now()});
+                if (remoteStream) {
+                    let randomNumber = Math.ceil(Math.random() * 1000);
+                    let blob         = remoteStream.record('download');
+//                    let url = window.URL.createObjectURL(blob);
+//                    let a = document.createElement('a');
+//                    a.href = url;
+//                    a.download = testName+".webm";
+//                    a.click();
+
+                    let file         = new File([blob], `${testName}-${randomNumber}.webm`, {
+                        type        : `webm`,
+                        lastModified: Date.now()
+                    });
                     return uploadFile(file);
                 }
             }
@@ -513,8 +695,6 @@
             }
 
         };
-
-
     }
 </script>
 </html>
