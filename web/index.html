@@ -109,7 +109,7 @@
     const turnList = [];
     const logUrl = "https://log.learning-tech.cn:8800/json";
     const moduleName = "rtcat-network-test-v3";
-
+    const uuid = guid();
     /**************** UI Element***************/
     var btStart = document.getElementById("bt_start");
 
@@ -224,7 +224,7 @@
 
     function getIce() {
         let ips = ["182.140.231.103","58.220.10.224","117.23.56.171","175.102.16.247","203.88.218.139","123.103.7.190",
-            "117.79.132.166","101.89.68.110","163.53.169.62","183.6.205.70","112.84.187.224"];
+            "117.79.132.166","101.89.68.110","163.53.169.62","183.6.205.70","112.84.187.244"];
 
         for(let i in ips){
             turnList.push({
@@ -308,7 +308,7 @@
         if(test){
             test.start();
         }else {
-            alert("测试完成");
+            alert("测试完成: " + uuid);
         }
     }
 
@@ -363,6 +363,17 @@
                 avg:0
             }
         }
+    }
+
+
+    function guid() {
+        function s4() {
+            return Math.floor((1 + Math.random()) * 0x10000)
+                    .toString(16)
+                    .substring(1);
+        }
+        return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+                s4() + '-' + s4() + s4() + s4();
     }
     
     
@@ -425,6 +436,8 @@
             };
 
             let report = {
+                userAgent:navigator.userAgent,
+                uuid    : uuid,
                 module  : moduleName,
                 userID  : userID,
                 address : address.join("/"),
