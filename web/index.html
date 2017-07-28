@@ -108,7 +108,7 @@
     const fps = 15;
     const turnList = [];
     const logUrl = "https://log.learning-tech.cn:8800/json";
-    const moduleName = "rtcat-network-test-v2";
+    const moduleName = "rtcat-network-test-v3";
 
     /**************** UI Element***************/
     var btStart = document.getElementById("bt_start");
@@ -224,7 +224,7 @@
 
     function getIce() {
         let ips = ["182.140.231.103","58.220.10.224","117.23.56.171","175.102.16.247","203.88.218.139","123.103.7.190",
-            "117.79.132.166","101.89.68.110","163.53.169.62","183.6.205.70"];
+            "117.79.132.166","101.89.68.110","163.53.169.62","183.6.205.70","112.84.187.224"];
 
         for(let i in ips){
             turnList.push({
@@ -428,7 +428,7 @@
                 module  : moduleName,
                 userID  : userID,
                 address : address.join("/"),
-                serverIp: testName,
+                serverIp: turnTest.ip,
                 clientIp: gIp,
                 data    : {
                     upload  : {
