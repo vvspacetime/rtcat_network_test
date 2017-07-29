@@ -104,11 +104,11 @@
 <script src="js/common/realtimecat.min.js"></script>
 <script>
     /************* Config ****************/
-    const testTime = 15;//每项视频连接测试的时间
+    const testTime = 5;//每项视频连接测试的时间
     const fps = 15;
     const turnList = [];
     const logUrl = "https://log.learning-tech.cn:8800/json";
-    const moduleName = "rtcat-network-test-v4";
+    const moduleName = "rtcat-network-test-v6";
     const uuid = guid();
     /**************** UI Element***************/
     var btStart = document.getElementById("bt_start");
@@ -161,7 +161,7 @@
 
         getIce();
         getUCloudIce().then(function () {
-            console.log(turnList);
+//            console.log(turnList);
             for(let i in turnList){
                 let test = new RTCatTest(turnList[i]);
                 let stateText = addRow(i);
@@ -203,7 +203,15 @@
             } else {
                 if((selArea.disabled && selCity.value != "0" && selCity.value != "") ||
                         selArea.value != "0" && selArea.value != ""){
-                    address = [selPro.value,selCity.value,selArea.value];
+                    let _address = [selPro.value,selCity.value,selArea.value];
+                    for(let i in _address){
+                        if(_address[i].length <= 0){
+                            _address.pop(i);
+                        }
+                    }
+
+                    address = _address;
+
                     userID = txtUserID.value;
 
                     console.log(userID,address);
@@ -308,7 +316,7 @@
         if(test){
             test.start();
         }else {
-            alert("测试完成: " + uuid);
+            alert(`测试已经完成。请复制报告数据名称: \n${userID}-${address.join('-')}-${uuid}`);
         }
     }
 
@@ -407,6 +415,8 @@
     function RTCatTest(turnTest) {
         let that      = this;
         let pipe1, pipe2;
+        let released = false;
+        let started = false;
 
         let testName = turnTest.ip.split(".").join("-");
 
@@ -476,6 +486,7 @@
                     if (!focus) {
                         that.setState("超时");
                         release();
+                        createReport();
                         goNext();
                     } else {
                     }
@@ -495,6 +506,7 @@
                 };
 
                 pipe1.on("closed", function () {
+                    release();
                 });
 
                 pipe1.on("connected", function () {
@@ -520,9 +532,17 @@
                 };
 
                 pipe2.on("connected", function () {
-                    clockTimeout.focusStop();
-                    startClock();
-                    playStream(remoteStream, testName);
+                    if(!started){
+                        started = true;
+                        if(!released){
+                            clockTimeout.focusStop();
+                            startClock();
+                            playStream(remoteStream, testName);
+                        }else {
+                            pipe1.close();
+                            pipe2.close();
+                        }
+                    }
                 });
 
                 pipe2.on("stream", function (stream) {
@@ -530,7 +550,7 @@
                 });
 
                 pipe2.on("closed", function () {
-
+                    release();
                 });
 
 
@@ -703,8 +723,12 @@
             }
 
             function release() {
-                pipe1.close();
-                pipe2.close();
+                if(!released){
+                    pipe1.close();
+                    pipe2.close();
+                    released = true;
+                }
+
             }
 
         };

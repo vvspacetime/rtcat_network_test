@@ -1,0 +1,21 @@
+{
+  "name": "demo7",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node --harmony server.js"
+  },
+  "dependencies": {
+    "koa": "^2.2.0",
+    "koa-static": "^2.0.0",
+    "koa-sslify": "^1.0.1",
+    "koa-logger": "^2.0.0",
+    "koa-body": "^1.0.1",
+    "koa-router": "",
+    "mkdirp":""
+  },
+  "author": "",
+  "license": "ISC"
+}

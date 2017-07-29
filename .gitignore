@@ -1,2 +1,6 @@
 video/
 .idea/
+node_modules/
+ssl/
+npm-debug.log
+config.json
