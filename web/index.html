@@ -102,6 +102,7 @@
 <script src="js/common/config.js"></script>
 <script src="vendor/bootstrap/js/bootstrap.min.js"></script>
 <script src="js/common/realtimecat.min.js"></script>
+<script src="js/common/DetectRTC.min.js"></script>
 <script>
     /************* Config ****************/
     const testTime = 15;//每项视频连接测试的时间
@@ -173,16 +174,28 @@
                 testList.push(test);
             }
 
-            RTCat.detect({browser:true}).then(function (result) {
-                if(result.browser.name != "Chrome"){
-                    console.log(result.browser);
-                    alert("浏览器兼容性检测不合格，请更换为Chrome浏览器")
+            DetectRTC.load(function () {
+                console.log(JSON.stringify(DetectRTC,0,2));
+                if(!DetectRTC.hasWebcam){
+                    alert("无法检测到摄像头")
+                }else if(!DetectRTC.hasSpeakers){
+                    alert("无法检测到麦克风")
+                }else if(!DetectRTC.isWebRTCSupported){
+                    alert("该浏览器不支持WebRTC，请更换为Chrome浏览器")
                 }else {
-//                    btStart.disabled = false;
+                    btStart.disabled = false;
                 }
-            }).catch(function (error) {
-                alert("检测浏览器错误,请更换为Chrome浏览器");
             });
+//            RTCat.detect({browser:true}).then(function (result) {
+//                if(result.browser.name != "Chrome"){
+//                    console.log(result.browser);
+//                    alert("浏览器兼容性检测不合格，请更换为Chrome浏览器")
+//                }else {
+////                    btStart.disabled = false;
+//                }
+//            }).catch(function (error) {
+//                alert("检测浏览器错误,请更换为Chrome浏览器");
+//            });
         });
 
 
