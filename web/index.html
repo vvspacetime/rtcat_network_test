@@ -18,39 +18,39 @@
     <div class="container">
         <div class="navbar-header">
             <a class="navbar-brand" href="/">
-                实时猫网络测试
+                RTCat Network Test
             </a>
         </div>
     </div>
 </nav>
 <div class="container">
-    <label>完成以下信息后，点击开始测试</label>
+    <!--<label>完成以下信息后，点击开始测试</label>-->
 
 
-    <div class="row">
-        <div class="col-md-4">
-            <div class="form-group">
-                <label for="txt_userID">用户ID</label>
-                <input type="text"  class="form-control" id="txt_userID">
-            </div>
-        </div>
+    <!--<div class="row">-->
+        <!--<div class="col-md-4">-->
+            <!--<div class="form-group">-->
+                <!--<label for="txt_userID">用户ID</label>-->
+                <!--<input type="text"  class="form-control" id="txt_userID">-->
+            <!--</div>-->
+        <!--</div>-->
 
 
-        <div class="col-md-6">
-            <label>用户地址</label>
-            <div id="address">
-                <select id="sel_pro" class="province form-control"></select>
-                <select id="sel_city" class="city form-control"></select>
-                <select id="sel_area" class="area form-control"></select>
-            </div>
-        </div>
-    </div>
+        <!--<div class="col-md-6">-->
+            <!--<label>用户地址</label>-->
+            <!--<div id="address">-->
+                <!--<select id="sel_pro" class="province form-control"></select>-->
+                <!--<select id="sel_city" class="city form-control"></select>-->
+                <!--<select id="sel_area" class="area form-control"></select>-->
+            <!--</div>-->
+        <!--</div>-->
+    <!--</div>-->
 
 
 
     <div class="row" style="margin-top: 10px">
         <div class="col-md-3">
-            <button class="btn btn-default" id="bt_start">开始测试</button>
+            <button class="btn btn-default" id="bt_start">Start</button>
         </div>
     </div>
 
@@ -63,12 +63,12 @@
     <div class="right">
         <div class="col-md-6">
             <table class="table" id="tb_test_1">
-                <caption>测试列表</caption>
+                <caption>Test List</caption>
                 <thead>
                 <tr>
                     <th>#</th>
-                    <th>服务器Ip</th>
-                    <th>状态</th>
+                    <th>Sever Ip</th>
+                    <th>State</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -78,12 +78,12 @@
 
         <div class="col-md-6">
             <table class="table" id="tb_test_2">
-                <caption>测试列表</caption>
+                <caption>Test List</caption>
                 <thead>
                 <tr>
                     <th>#</th>
-                    <th>服务器Ip</th>
-                    <th>状态</th>
+                    <th>Server Ip</th>
+                    <th>State</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -91,8 +91,6 @@
             </table>
         </div>
     </div>
-
-
 
 </div>
 
@@ -109,11 +107,10 @@
     const fps = 15;
     const turnList = [];
     const logUrl = "https://log.learning-tech.cn:8800/json";
-    const moduleName = "rtcat-network-test-v7";
+    const moduleName = "rtcat-network-test-jr-v1";
     const uuid = guid();
     /**************** UI Element***************/
     var btStart = document.getElementById("bt_start");
-
     /*************Global************/
     var address = [];
     var userID = "";
@@ -159,8 +156,6 @@
             return stateText;
         }
 
-
-        getConstIce();
         getIce().then(function () {
 //            console.log(turnList);
             for(let i in turnList){
@@ -202,58 +197,19 @@
     };
 
     btStart.onclick = function () {
-        var txtUserID = document.getElementById("txt_userID");
-        var regExp = /^[\u4e00-\u9effa-zA-Z0-9\-]{1,100}$/g;
-        if(!regExp.test(txtUserID.value)){
-            alert("用户ID不能包含特殊字符");
-        }else {
-            var selPro = document.getElementById("sel_pro");
-            var selCity = document.getElementById("sel_city");
-            var selArea = document.getElementById("sel_area");
+        address = ["精锐英语"];
 
-            if(!txtUserID.value && txtUserID.value.length <= 0) {
-                alert("请补全用户ID");
-            } else {
-                if((selArea.disabled && selCity.value != "0" && selCity.value != "") ||
-                        selArea.value != "0" && selArea.value != ""){
-                    let _address = [selPro.value,selCity.value,selArea.value];
-                    for(let i in _address){
-                        if(_address[i].length <= 0){
-                            _address.pop(i);
-                        }
-                    }
+        userID = guid();
 
-                    address = _address;
+        console.log(userID,address);
 
-                    userID = txtUserID.value;
-
-                    console.log(userID,address);
-
-                    getIp().then(function (ip) {
-                        gIp = ip;
-                        getLocalStream();
-                        btStart.disabled = true;
-                    });
-                }else {
-                    alert("请补全地址信息");
-                }
-            }
-        }
-
-
+        getIp().then(function (ip) {
+            gIp = ip;
+            getLocalStream();
+            btStart.disabled = true;
+        });
     };
 
-    function getConstIce() {
-//        let ips = ["58.220.10.224","117.23.56.171","112.84.187.244"];
-//        for(let i in ips){
-//            turnList.push({
-//                ip:ips[i],
-//                username:"jingewiming",
-//                credential:"jingweiming"
-//            });
-//        }
-    }
-    
     function getIce() {
         let ips = ["175.102.16.247","123.103.7.190","120.132.67.63","120.132.14.84","106.75.147.211","203.88.218.143","117.48.195.110"];
         
@@ -326,7 +282,8 @@
         if(test){
             test.start();
         }else {
-            alert(`测试已经完成。请复制报告数据名称: \n${userID}-${address.join('-')}-${uuid}`);
+            prompt("The test has been completed. Please copy the report data name: \n",`${userID}-${address.join('-')}-${uuid}`);
+            var reportID = document.getElementById("reportID");
         }
     }
 
@@ -627,7 +584,7 @@
                 remoteStream.record('stop');
                 release();
                 Promise.all([createReport(), createRecord()]).then(function () {
-                    that.setState("测试完成");
+                    that.setState("Test finished");
                     goNext();
                 }).catch(function (error) {
                     console.log(error);
@@ -640,7 +597,7 @@
                     testEnd();
                 };
                 clock.oncount = function (c) {
-                    that.setState("测试中：" + c);
+                    that.setState("Testing：" + c);
                 };
                 clock.start();
                 remoteStream.record('start');
@@ -685,7 +642,7 @@
                         var total    = event.total;
                         if (event.lengthComputable) {
                             percent = Math.ceil(position / total * 100);
-                            that.setState(`上传录像中: ${percent}%`);
+                            that.setState(`Uploading record: ${percent}%`);
                         }
                     }
 
