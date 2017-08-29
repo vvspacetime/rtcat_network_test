@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RealTimeCat Connection Test</title>
+    <link rel="stylesheet" href="vendor/bootstrap/css/bootstrap.min.css">
+    <style>
+        .players {
+            position: relative;
+        }
+
+        .player {
+            float: left;
+        }
+
+        .output {
+            background-color: #eee;
+            font-family: 'Inconsolata', 'Courier New', monospace;
+            font-size: 0.9em;
+            padding: 10px 10px 10px 25px;
+            position: relative;
+            top: 10px;
+            white-space: pre;
+            max-height: 200px;
+            height: 200px;
+            width: 100%;
+            overflow-x: hidden;
+            overflow-y: scroll;
+        }
+    </style>
+
+</head>
+<body>
+<nav class="navbar navbar-default navbar-static-top">
+    <div class="container">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="/">
+                RealTimeCat Connection Test
+            </a>
+        </div>
+    </div>
+</nav>
+<div class="container">
+
+    <div class="row">
+        <div class="col-md-2">
+            <label for="session_sel">session:</label>
+            <select id="session_sel" class="form-control"></select>
+        </div>
+        <div class="col-md-2">
+            <label for="res_sel">resolution:</label>
+            <select id="res_sel" class="form-control"></select>
+        </div>
+        <div class="col-md-2">
+            <label for="turn_sel">region:</label>
+            <select id="turn_sel" class="form-control">
+                <!--<option>auto(default)</option>-->
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label for="fps_sel">fps:</label>
+            <select id="fps_sel" class="form-control">
+
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label for="codec_sel">codec:</label>
+            <select id="codec_sel" class="form-control">
+            </select>
+        </div>
+
+        <div class="col-lg-2">
+            <label for="type_sel">type:</label>
+            <select id="type_sel" class="form-control">
+
+            </select>
+        </div>
+    </div>
+    <div class="row" style="margin-top: 10px;">
+        <div class="col-md-12">
+            <div class="btn-group">
+                <button class="btn btn-default" onclick="connect()" id="bt_connect" disabled="disabled">connect</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="output" id="info_display"></div>
+
+    <div class="players" id="players"></div>
+
+</div>
+
+
+</body>
+<script src="js/common/jquery.min.js"></script>
+<script src="vendor/bootstrap/js/bootstrap.min.js"></script>
+<script src="js/common/config.js"></script>
+<script src="js/common/realtimecat.twoway.min.js"></script>
+
+<script>
+    var hostDefault = "auto(default)";
+    var session, localStream, remoteStream;
+
+    var btConnect     = document.getElementById("bt_connect");
+    var infoDisplay   = document.getElementById("info_display");
+    var serverDisplay = document.getElementById("server_display");
+    var sizeDisplay   = document.getElementById("res_sel");
+    var turnDisplay   = document.getElementById("turn_sel");
+    var fpsDisplay    = document.getElementById("fps_sel");
+    var codecDisplay  = document.getElementById("codec_sel");
+    var typeDisplay   = document.getElementById("type_sel");
+    var sessionDisplay = document.getElementById("session_sel");
+
+    var hostList = {};
+
+    var sizeList = {
+        "120x90"            : {width: 120, height: 90},
+        "320x240"           : {width: 320, height: 240},
+        "640x480(default)"  : {width: 640, height: 480},
+        "1280x720"          : {width: 1280, height: 720}
+    };
+
+
+    var fpsList = {
+        "15"            :   15,
+        "24(default)"   :   24,
+        "30"            :   30
+    };
+
+
+    var codecList = {
+        "vp9(defalut)"  : "vp9",
+        "h264"          : "h264",
+        "vp8"           : "vp8"
+    };
+
+
+    var typeList = {
+        "relay(defalut)": "relay",
+        "p2p"           : "p2p"
+    };
+
+    var streamSize = sizeList["320x240"];
+    var turnHost   = hostDefault;
+
+    window.onload = function () {
+        for (let i in sizeList) {
+            let option  = document.createElement("option");
+
+            if(i == "640x480(default)"){
+                option.selected = true;
+            }
+
+            option.text = i;
+            sizeDisplay.add(option);
+        }
+
+
+        $.getJSON("turn-config.json",function (json) {
+            hostList = json;
+            btConnect.disabled = false;
+            let option = document.createElement("option");
+            option.text = hostDefault;
+            turnDisplay.add(option);
+            for (let i in hostList) {
+                let option  = document.createElement("option");
+                option.text = i;
+                turnDisplay.add(option);
+            }
+        });
+
+
+        for(let i in codecList){
+            let option = document.createElement("option");
+            option.text = i;
+            codecDisplay.add(option);
+        }
+
+        for(let i in fpsList){
+            let option = document.createElement("option");
+            option.text = i;
+            if(i == "24(default)"){
+                option.selected = true;
+            }
+            fpsDisplay.add(option);
+        }
+
+
+
+        for(let i in typeList){
+            let option = document.createElement("option");
+            option.text = i;
+            typeDisplay.add(option);
+        }
+
+
+        for(let i in p2p_sessions){
+            let option = document.createElement("option");
+            option.text = i;
+            sessionDisplay.add(option);
+        }
+    };
+
+    function connect() {
+        createStream();
+    }
+
+    function createStream() {
+        btConnect.disabled = true;
+
+        let sizeValue = sizeDisplay.value;
+        console.log("choose size", sizeValue);
+        streamSize = sizeList[sizeValue];
+
+        let hostValue = turnDisplay.value;
+        console.log("choose turn", hostValue);
+        turnHost = hostValue;
+
+        let fpsValue = fpsDisplay.value;
+        console.log("choose fps", fpsValue);
+        let fps = fpsList[fpsValue];
+
+        let codecValue = codecDisplay.value;
+        console.log("choose codecValue",codecValue);
+        let codec = codecList[codecValue];
+
+        let typeValue = typeDisplay.value;
+        console.log("choose type",typeValue);
+        let enableRelay = (typeList[typeValue] == "relay");
+
+        let sessionValue = sessionDisplay.value;
+        let session = p2p_sessions[sessionValue];
+
+        RTCat.setRelay(enableRelay);
+        RTCat.setVideoCodec(codec);
+        RTCat.createStream({type: RTCat.STREAM_TYPE.AV, size: streamSize, fps: fps}).then(function (stream) {
+            localStream = stream;
+            playStream(stream, "local");
+            getToken(session).then(function (token) {
+                createSession(token);
+            });
+        });
+    }
+
+    function createSession(token) {
+        console.log("my token", token);
+
+        let p2pOpt = {
+            tokenId: token,
+            url    : "wss://turn.rtcat.cn:3001",
+            type   : "p2p",
+            stream : localStream
+        };
+
+        RTCat.createSession(p2pOpt).then(function (_session) {
+            console.log("session connected");
+            session = _session;
+
+            handleIceServers();
+            session.on('pipe', function (pipe) {
+                pipe.on('stream', function (stream) {
+                    remoteStream = stream;
+                    console.log("peer remote stream");
+                    playStream(stream, pipe.id);
+
+                });
+                pipe.on('connected', function () {
+                    console.log("peer connected");
+                });
+                pipe.on('closed', function () {
+                    console.log("peer closed");
+                });
+                pipe.on('error', function (error) {
+                    console.log("peer error", error);
+                });
+                pipe.on('log', function (log) {
+                    log.net.codec = log.video.codecName;
+                    log.net.uploadKB = log.net.sent;
+                    log.net.downloadKB = log.net.received;
+
+                    delete  log.net.sent;
+                    delete  log.net.bytesSent;
+                    delete  log.net.received;
+                    delete  log.net.bytesReceived;
+//                    log.net.remove("bytesSent");
+//                    log.net.remove("received");
+//                    log.net.remove("bytesReceived");
+
+                    display(log.net);
+//                    console.log("peer log",log);
+                })
+            });
+            session.on('disconnect', function () {
+                console.log("session disconnect");
+            });
+            session.on('list', function (list) {
+                console.log("list", JSON.stringify(list));
+                for (var elem of list) {
+                    if (elem != token) {
+                        session.call(elem);
+                        break;
+                    }
+                }
+            });
+            session.on('error', function (error) {
+                console.log("session error", error);
+            });
+            session.on('called', function (tokenId) {
+                console.log("session called", tokenId);
+                session.accept();
+            });
+
+            session.on('hangup', function () {
+                console.log("session hangup");
+            });
+
+            session.on('statechange', function (state) {
+                console.log("session statechange", state);
+            });
+
+            session.list();
+        }).catch(function (e) {
+            console.log(e);
+        });
+    }
+
+    function playStream(stream, id) {
+        var div = document.createElement('div');
+        div.setAttribute('id', 'video-' + id);
+        div.setAttribute('class', 'player');
+        document.getElementById('players').appendChild(div);
+        stream.play('video-' + id, {size: {width: 300, height: 300}});
+
+    }
+
+    function display(net) {
+
+        infoDisplay.textContent = JSON.stringify(
+                handleNet(net), null, "     ");
+    }
+
+    function handleNet(net) {
+        net.server      = session.getInfo().server;
+        net.local_turn  = getAddress(net.local_ip);
+        net.remote_turn = getAddress(net.remote_ip);
+        return net;
+    }
+
+
+    function getAddress(ip) {
+        if (ip) {
+            for (var i in hostList) {
+                if (ip.indexOf(hostList[i][0]) !== -1) {
+                    return i + "(ext)";
+                }
+
+                if(ip.indexOf(hostList[i][1]) !== -1){
+                    return i + "(int)";
+                }
+            }
+        }
+        return "unknown or local";
+    }
+
+    function handleIceServers() {
+        if (turnHost == hostDefault) return;
+
+        String.prototype.splice = function (idx, rem, str) {
+            return this.slice(0, idx) + str + this.slice(idx + Math.abs(rem));
+        };
+
+        let iceServers = session.getIceServers();
+        for (let i in iceServers) {
+            let urls = iceServers[i].urls;
+            for(let j in urls){
+                console.log("修改前",urls[j]);
+                let regex = /[-a-zA-Z0-9%_\+.~#?&\/\/=]{2,256}\.[a-z]{2,4}\b(\/[-a-zA-Z0-9@:%_\+.~#?&\/\/=]*)?/gi;
+                urls[j] = urls[j].replace(regex,hostList[turnHost][0]);
+                console.log("修改后",urls[j]);
+            }
+        }
+
+
+        session.setIceServers(iceServers);
+//        return iceServers;
+    }
+
+</script>
+</html>

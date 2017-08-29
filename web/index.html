@@ -159,8 +159,6 @@
             return stateText;
         }
 
-
-        getConstIce();
         getIce().then(function () {
 //            console.log(turnList);
             for(let i in turnList){
@@ -186,16 +184,7 @@
                     btStart.disabled = false;
                 }
             });
-//            RTCat.detect({browser:true}).then(function (result) {
-//                if(result.browser.name != "Chrome"){
-//                    console.log(result.browser);
-//                    alert("浏览器兼容性检测不合格，请更换为Chrome浏览器")
-//                }else {
-////                    btStart.disabled = false;
-//                }
-//            }).catch(function (error) {
-//                alert("检测浏览器错误,请更换为Chrome浏览器");
-//            });
+
         });
 
 
@@ -243,55 +232,36 @@
 
     };
 
-    function getConstIce() {
-//        let ips = ["58.220.10.224","117.23.56.171","112.84.187.244"];
-//        for(let i in ips){
-//            turnList.push({
-//                ip:ips[i],
-//                username:"jingewiming",
-//                credential:"jingweiming"
-//            });
-//        }
-    }
-    
     function getIce() {
-        let ips = ["175.102.16.247","123.103.7.190","120.132.67.63","120.132.14.84","106.75.147.211","203.88.218.143","117.48.195.110"];
-        
-        let apikey = "8b8da770-d99c-4617-9f9a-79510505e175";
-        let secret="262abb49-2ffc-46c6-bdc7-cb27579b21c5";
-        let p2p_session="314e6da1-7282-44cd-92b2-41cc99e1d6ba";
-        let token_url = "https://api.realtimecat.com/v0.4/sessions/"
-                + p2p_session + '/tokens';
+        let ips = [];
 
         return new Promise(function(resolve,reject){
-            $.ajax({
-                'url':token_url,
-                'method':'POST',
-                'headers':{
-                    'X-RTCAT-APIKEY':apikey,
-                    'X-RTCAT-SECRET':secret
-                },
-                'data':{
-                    'session_id':p2p_session,
-                    'type':'pub'
-                }
-            }).done(function(msg){
-                RTCat.createSession({tokenId:msg.uuid,url:"wss://turn.rtcat.cn:3001",type:"p2p"}).then(function (session) {
-                    let iceServers = session.getIceServers();
-                    let username = iceServers[0].username;
-                    let credential = iceServers[0].credential;
-
-                    for(let i in ips){
-                        turnList.push({
-                            ip:ips[i],
-                            username:username,
-                            credential:credential});
+            $.getJSON("turn-config.json",function (data) {
+                for(let i in data){
+                    if(data.hasOwnProperty(i)){
+                        let ss = data[i];
+                        ips.push(ss[0]);
                     }
+                }
+                getToken(p2p_sessions[0]).then(function (token) {
+                    RTCat.createSession({tokenId:token,url:"wss://turn.rtcat.cn:3001",type:"p2p"}).then(function (session) {
+                        let iceServers = session.getIceServers();
+                        let username = iceServers[0].username;
+                        let credential = iceServers[0].credential;
 
-                    resolve();
+                        for(let i in ips){
+                            turnList.push({
+                                ip:ips[i],
+                                username:username,
+                                credential:credential
+                            });
+                        }
+
+                        resolve();
+                    });
+                }).catch(function (e) {
+                    reject(e)
                 });
-            }).error(function (error) {
-                console.log(error);
             });
         });
     }
