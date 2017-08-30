@@ -3,18 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <title>实时猫Turn节点配置</title>
+    <link rel="stylesheet" href="vendor/bootstrap/css/bootstrap.min.css">
 </head>
 <body>
 
-<label for="textarea" >turn-config.json</label>
-<textarea id="textarea" cols=50 rows=10>
+<nav class="navbar navbar-default navbar-static-top">
+    <div class="container">
+        <div class="navbar-header">
+            <a class="navbar-brand">
+                实时猫测试配置文件修改
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <p class="bd-lead">
+        该页面用于配置
+        <a href="index.html">实时猫网络测试</a>
+        <a href="one.html">实时猫连接测试</a> <br>
+        1. <strong>Commit</strong> 提交当前工作区修改信息   <br>
+        2. <strong>Save</strong> 保存当前工作区修改信息 <br>
+        3. <strong>Reset</strong> 使用上次保存信息覆盖当前工作区
+    </p>
+
+        <div class="row">
+            <button id="commit" class="btn btn-default">Commit</button>
+            <button id="save" class="btn btn-default">Save</button>
+            <button id="reset" class="btn btn-default">Reset</button>
+        </div>
 
 
+        <div class="row" style="margin-top: 10px">
+            <label for="textarea" ></label>
+            <textarea id="textarea" rows="30" cols="80"></textarea>
+        </div>
+</div>
 
-</textarea>
-
-
-<button id="commit">Commit</button>
 
 
 </body>
@@ -22,35 +47,74 @@
 <script src="vendor/bootstrap/js/bootstrap.min.js"></script>
 
 <script>
-    var filename = "turn-config.json";
+    const FileName = "turn-config.json";
+    const FileSaveName = "turn-config.json.b";
 
     window.onload = function () {
-        $.getJSON(`./${filename}`,function (json) {
-            $("#textarea").text(JSON.stringify(json,null,4));
-        });
+        show(FileName);
     };
 
     $("#commit").click(function () {
+        upload(FileName);
+    });
 
+    $("#save").click(function () {
+        upload(FileSaveName);
+    });
+
+    $("#reset").click(function () {
+        show(FileSaveName);
+    });
+
+
+    function show(name) {
+        $.getJSON(`./${name}`,function (json) {
+//            $("#textarea").val(JSON.stringify(json,null,4));
+            $("#textarea").val(beautifyData(json));
+        });
+    }
+
+
+    function upload(name) {
         var text = $("#textarea").val();
 
-        var formData = new FormData();
-        formData.append("file", new File([new Blob([text])], filename));
-        formData.append("upload_file", true);
+        try {
+            JSON.parse(text);
+            var formData = new FormData();
+            formData.append("file", new File([new Blob([text])], name));
+            formData.append("upload_file", true);
 
-        $.ajax({
-            method:"POST",
-            url   :"./web",
-            cache      : false,
-            contentType: false,
-            processData: false,
-            data       : formData
-        }).done(function () {
-            location.reload();
-        }).error(function (error) {
-            console.log(error);
-        });
-    });
+            $.ajax({
+                method:"POST",
+                url   :"./web",
+                cache      : false,
+                contentType: false,
+                processData: false,
+                data       : formData
+            }).done(function () {
+//                show(name)
+//                location.reload();
+            }).error(function (error) {
+                console.log(error);
+            });
+        }catch(e){
+            alert("格式错误");
+        }
+    }
+
+    function beautifyData(data) {
+        let rs = "{\n";
+        for(let key in data){
+            if(data.hasOwnProperty(key)){
+                rs += "\t\"" + key + "\"\t\t: ";
+                rs += JSON.stringify(data[key]);
+                rs += ",\n";
+            }
+        }
+        rs = rs.substr(0,rs.length-2);
+        rs += "\n}";
+        return rs;
+    }
 
 
 </script>

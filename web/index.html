@@ -17,7 +17,7 @@
 <nav class="navbar navbar-default navbar-static-top">
     <div class="container">
         <div class="navbar-header">
-            <a class="navbar-brand" href="/">
+            <a class="navbar-brand">
                 实时猫网络测试
             </a>
         </div>
@@ -160,7 +160,7 @@
         }
 
         getIce().then(function () {
-//            console.log(turnList);
+            console.log("turn list:",turnList);
             for(let i in turnList){
                 let test = new RTCatTest(turnList[i]);
                 let stateText = addRow(i);
@@ -237,6 +237,7 @@
 
         return new Promise(function(resolve,reject){
             $.getJSON("turn-config.json",function (data) {
+//                console.log(data);
                 for(let i in data){
                     if(data.hasOwnProperty(i)){
                         let ss = data[i];
