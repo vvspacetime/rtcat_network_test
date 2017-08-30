@@ -101,7 +101,7 @@
 <script src="js/common/jquery.cxselect.min.js"></script>
 <script src="js/common/config.js"></script>
 <script src="vendor/bootstrap/js/bootstrap.min.js"></script>
-<script src="js/common/realtimecat.min.js"></script>
+<script src="js/common/realtimecat.pipe.min.js"></script>
 <script src="js/common/DetectRTC.min.js"></script>
 <script>
     /************* Config ****************/
@@ -109,7 +109,7 @@
     const fps = 15;
     const turnList = [];
     const logUrl = "https://log.learning-tech.cn:8800/json";
-    const moduleName = "rtcat-network-test-v7";
+    const moduleName = "rtcat-network-test-v8";
     const uuid = guid();
     /**************** UI Element***************/
     var btStart = document.getElementById("bt_start");
@@ -118,6 +118,7 @@
     var address = [];
     var userID = "";
     var gIp = "";
+    var ssp = "";
     var currentTest = "";
     var localStream;
     var testList = [];
@@ -247,6 +248,7 @@
                 getToken(p2p_sessions[0]).then(function (token) {
                     RTCat.createSession({tokenId:token,url:"wss://turn.rtcat.cn:3001",type:"p2p"}).then(function (session) {
                         let iceServers = session.getIceServers();
+                        ssp = session.getInfo().server;
                         let username = iceServers[0].username;
                         let credential = iceServers[0].credential;
 
@@ -431,6 +433,7 @@
                 uuid    : uuid,
                 module  : moduleName,
                 userID  : userID,
+                ssp     : ssp,
                 address : address.join("/"),
                 serverIp: turnTest.ip,
                 clientIp: gIp,
