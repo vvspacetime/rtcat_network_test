@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>实时猫Turn节点配置</title>
+</head>
+<body>
+
+<label for="textarea" >turn-config.json</label>
+<textarea id="textarea" cols=50 rows=10>
+
+
+
+</textarea>
+
+
+<button id="commit">Commit</button>
+
+
+</body>
+<script src="js/common/jquery.min.js"></script>
+<script src="vendor/bootstrap/js/bootstrap.min.js"></script>
+
+<script>
+    var filename = "turn-config.json";
+
+    window.onload = function () {
+        $.getJSON(`./${filename}`,function (json) {
+            $("#textarea").text(JSON.stringify(json,null,4));
+        });
+    };
+
+    $("#commit").click(function () {
+
+        var text = $("#textarea").val();
+
+        var formData = new FormData();
+        formData.append("file", new File([new Blob([text])], filename));
+        formData.append("upload_file", true);
+
+        $.ajax({
+            method:"POST",
+            url   :"./web",
+            cache      : false,
+            contentType: false,
+            processData: false,
+            data       : formData
+        }).done(function () {
+            location.reload();
+        }).error(function (error) {
+            console.log(error);
+        });
+    });
+
+
+</script>
+</html>
