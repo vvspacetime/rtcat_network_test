@@ -34,6 +34,8 @@ const switchStart = function () {
         stream.stop();
         stream = null;
 
+        sel("#bt_publish").disabled = true;
+        sel("#bt_publish").textContent = "开始推流";
         while (sel("#remotes").firstChild) {
             sel("#remotes").removeChild(sel("#remotes").firstChild);
         }
