@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>实时猫SFU测试</title>
+    <link rel="stylesheet" href="vendor/bootstrap/css/bootstrap.min.css">
+    <style>
+        .players {
+            position: relative;
+        }
+        .player {
+            float: left;
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-default navbar-static-top">
+    <div class="container">
+        <div class="navbar-header">
+            <a class="navbar-brand">
+                实时猫SFU测试
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="row">
+        <div id="sels"></div>
+    </div>
+
+    <div class="row" style="margin-top: 10px;">
+        <div class="col-md-12">
+            <button class="btn btn-default" id="bt_start">开始</button>
+            <button class="btn btn-default" id="bt_publish" disabled="disabled">开始推流</button>
+        </div>
+    </div>
+
+    <div id="local"></div>
+    <div id="remotes"></div>
+</div>
+</body>
+<script src="js/common/jquery.min.js"></script>
+<script src="js/common/co.js"></script>
+<script src="js/common/realtimecat.sfu.js"></script>
+<script src="js/common/config.js"></script>
+<script src="js/common/selector.js"></script>
+<script src="js/sfu.js"></script>
+</html>
