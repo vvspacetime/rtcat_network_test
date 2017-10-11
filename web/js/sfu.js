@@ -213,7 +213,7 @@ const start = function* () {
         "screen":RTCat.STREAM_TYPE.SCREEN,
     };
     let streamConfig = {
-        size: {width: 320, height: 240},
+        size: {width: 640, height: 480},
         type: list[config.media.value],
     };
 
