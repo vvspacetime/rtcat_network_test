@@ -13,7 +13,7 @@ var mkdirp = require('mkdirp');
 
 app.use(logger());
 app.use(koaBody({ multipart: true }));
-app.use(enforceHttps());
+// app.use(enforceHttps());
 app.use(serve('web'));
 
 app.use(function(ctx, next) {
@@ -48,6 +48,7 @@ var options = {
     cert: fs.readFileSync(config.cert)
 };
 
-https.createServer(options, app.callback()).listen(config.port);
+http.createServer(app.callback()).listen(config.port);
+// https.createServer(options, app.callback()).listen(config.port);
 
 console.log('listening on port :',config.port);
