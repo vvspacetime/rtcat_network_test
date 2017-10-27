@@ -9,7 +9,7 @@ const config = {
     route:  {
         display: "route",
         value  : "",
-        options: ["beijing","guangdong","shanghai","sichuan"],
+        options: ["auto","beijing","guangdong","shanghai","sichuan"],
     },
     log:    {
         display: "log",
@@ -219,11 +219,16 @@ const start = function* () {
 
     stream = yield RTCat.createStream(streamConfig);
     stream.play('local',{size:{width:100,height:100}});
-    session = RTCat.createSFUSession(token,{
+
+    let sconfig = {
         url:config.server.value,
-        route:config.route.value,
         attr:{platform:"web"},
-    });
+    };
+    if (config.route.value != "auto") {
+        sconfig.route = config.route.value;
+    }
+
+    session = RTCat.createSFUSession(token,sconfig);
     bindSessionEvent(session);
     session.connect();
 };
